@@ -1,0 +1,98 @@
+# Monarch
+
+Monarch is an Oban job powered process for automatically running data migrations.
+
+## Installation
+
+The package can be installed by adding `monarch` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:monarch, "~> 0.1.0"}
+  ]
+end
+```
+
+### Setting up Your Database
+
+Monarch will discover Oban jobs that need to be run and queue them up for you.
+It will only attempt to queue up jobs that have not already been completed using Monarch.
+
+This library uses a database table, `monarch_jobs` to determine if an Oban job has already been completed.
+In order for this to work properly, create a new migration against your app using the mix command: `mix ecto.gen.migration add_monarch_jobs`.
+Your migration should spin up the `monarch_jobs` table needed like this:
+
+```
+use Ecto.Migration
+
+def up, do: Monarch.Migrations.up(version: 1)
+def down, do: Monarch.Migrations.down(version: 1)
+```
+
+### Implementing the Monarch behaviour
+
+In order to write an Oban job that will get detected by Monarch you just need to implement the Monarch behaviour in any module inside your application.
+
+You can use this mix task inside of Monarch to spin up a module for you or write one manually.
+
+`mix monarch --monarch-path apps/myapp/lib/myapp/workers/monarch my_monarch_module`
+
+This should create the directory from the `monarch-path` if it doesn't already exist and create the `my_monarch_module` file inside the direcotry with a template of the Monarch behaviour implemented for you.
+
+Then, there are 2 functions you need for our Monarch behaviour to work: a `query/0` function and an `update/1` function.
+
+* `query/0` - Should return a list of records that need to be updated.
+* `update/1` - Takes the list of records from `query/0` and performs the given update
+
+Monarch will keep running until `query/0` returns no remaining records to be updated, after which it will record a completed job in the `monarch_jobs` table.
+
+For example, let's say you add a new column `verified_email` on a `Users` schema that is defaulted to `nil` and want to backfill all existing users to have this set to be false.
+
+You query could look like this:
+
+```
+def query do
+  User
+  |> where([user], is_nil(user.verified_email))
+  |> limit(500)
+  |> select(user.id)
+  |> MyApp.Repo.all()
+end
+```
+
+This will only return a list of user ID records that have not had there `verified_email` column set yet in batches of 500.
+
+Then, our `update/1` function could look like this:
+
+```
+def update(user_ids) do
+  MyApp.Repo.update_all(
+    from(user in User,
+      where: user.id in ^user_ids,
+      update: [set: [verified_email: false]]
+    ),
+    []
+  )
+end
+```
+
+This takes in the `user_ids` returned from our query function and uses them to perform a batch update on all those users to have their `verified_email` column set to false.
+
+Finally, if there are still more users that need to be updated Monarch will rerun the query to verify and reperform the job until there are no more records that need to be updated.
+
+### Running Monarch
+
+You can run Monarch manually via the command line or include it in your project's application module so it is automatically run *after* your application has been started and Oban is up and running.
+
+All you need to run is `Monarch.run(Oban, #{queue_name})`.
+
+`Oban` should be your own instance of Oban inside your application you pass into Monarch and `#{queue_name}` is any queue you have defined that you want jobs to be run against. Your queue can be an existing queue your application is using or you can create a queue specifically for Monarch.
+
+Please see [Oban's documentation](https://hexdocs.pm/oban/Oban.html) on how to install Oban and define queues.
+
+### TODO for when Monarch abstracted out into library
+
+- Implement Credo
+- Implement Dialyzer
+- Implement Github CI
