@@ -5,7 +5,7 @@ defmodule Monarch.MixProject do
     [
       app: :monarch,
       version: "0.1.0",
-      elixir: "~> 1.13",
+      elixir: "~> 1.15.7",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       elixirc_paths: ["lib/", "test/"],
@@ -26,7 +26,8 @@ defmodule Monarch.MixProject do
     [
       {:ecto_sql, "~> 3.11"},
       {:postgrex, ">= 0.0.0"},
-      {:oban, "~> 2.14"}
+      {:oban, "~> 2.14"},
+      {:timex, "~> 3.7.6"}
     ]
   end
 

@@ -7,7 +7,7 @@ defmodule MonarchTest do
   alias Monarch.Repo
 
   describe "Monarch.run/1" do
-    test "detects and queues job" do
+    test "detects and queues jobs" do
       Monarch.run(Monarch.Oban, "test")
 
       queued_jobs = all_enqueued(worker: Monarch.Worker)
@@ -46,7 +46,22 @@ defmodule MonarchTest do
                  oban_job.args["job"] == "Elixir.MonarchTestAlreadyCompletedJob"
                end)
 
-      assert 3 = length(queued_jobs)
+      scheduled_at_time = Timex.end_of_day(DateTime.utc_now())
+
+      # A scheduled job will still be enqueued
+      assert %Oban.Job{
+               args: %{
+                 "job" => "Elixir.MonarchTestScheduledJob",
+                 "repo" => "Elixir.Monarch.Repo"
+               },
+               worker: "Monarch.Worker",
+               scheduled_at: scheduled_at_time
+             } =
+               Enum.find(queued_jobs, fn oban_job ->
+                 oban_job.args["job"] == "Elixir.MonarchTestScheduledJob"
+               end)
+
+      assert 4 = length(queued_jobs)
     end
 
     test "will not queue a job that has already been completed" do
@@ -59,12 +74,76 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 2 = length(all_enqueued(worker: Monarch.Worker))
+      assert 3 = length(all_enqueued(worker: Monarch.Worker))
 
       # Verify the update function of the completed job did not run which would have deleted the record
       assert 1 =
                from(job in "monarch_jobs",
                  where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
+                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+               )
+               |> Repo.all()
+               |> length()
+    end
+
+    test "will not queue a job that has scheduled_at nil" do
+      # Insert a record that would be caught by the job's query
+      Repo.insert_all("monarch_jobs", [
+        %{
+          inserted_at: NaiveDateTime.truncate(DateTime.utc_now(), :second),
+          name: "Elixir.AFakeJob"
+        }
+      ])
+
+      Monarch.run(Monarch.Oban, "test")
+
+      assert 4 = length(all_enqueued(worker: Monarch.Worker))
+
+      # Verify the update function of the completed job did not run which would have deleted the record
+      assert 1 =
+               from(job in "monarch_jobs",
+                 where: job.name == "Elixir.AFakeJob",
+                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+               )
+               |> Repo.all()
+               |> length()
+
+      # Verify a record does not get inserted for the manual job marking the job as completed
+      assert 0 =
+               from(job in "monarch_jobs",
+                 where: job.name == "Elixir.MonarchTestManualJob",
+                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+               )
+               |> Repo.all()
+               |> length()
+    end
+
+    test "queues jobs that should be scheduled at in the future" do
+      # Insert a record that would be caught by the job's query
+      Repo.insert_all("monarch_jobs", [
+        %{
+          inserted_at: NaiveDateTime.truncate(DateTime.utc_now(), :second),
+          name: "Elixir.AFakeJob"
+        }
+      ])
+
+      Monarch.run(Monarch.Oban, "test")
+
+      assert 4 = length(all_enqueued(worker: Monarch.Worker))
+
+      # Verify the update function of the completed job did not run which would have deleted the record
+      assert 1 =
+               from(job in "monarch_jobs",
+                 where: job.name == "Elixir.AFakeJob",
+                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+               )
+               |> Repo.all()
+               |> length()
+
+      # Verify a record does not get inserted for the scheduled job marking the job as completed
+      assert 0 =
+               from(job in "monarch_jobs",
+                 where: job.name == "Elixir.MonarchTestScheduledJob",
                  select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
                )
                |> Repo.all()
