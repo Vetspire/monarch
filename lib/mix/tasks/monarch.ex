@@ -46,8 +46,6 @@ defmodule Mix.Tasks.Monarch do
   defmodule <%= inspect @mod %> do
     @behaviour Monarch
 
-    import Ecto.Query
-
     @impl Monarch
     def skip, do: false
 
@@ -61,7 +59,7 @@ defmodule Mix.Tasks.Monarch do
     end
 
     @impl Monarch
-    def update(records_returned_from_query) do
+    def update(_records_returned_from_query) do
       # A function that runs an update or processes the chunk of `records_returned_from_query`
     end
   end
