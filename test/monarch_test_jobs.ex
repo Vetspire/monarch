@@ -130,7 +130,7 @@ defmodule MonarchTestManualJob do
   end
 end
 
-defmodule MonarchTestScheduledJob do
+defmodule MonarchTestScheduledFutureJob do
   @moduledoc """
   A module that implements a monarch job that should be scheduled at the end of the day.
   """
@@ -146,6 +146,43 @@ defmodule MonarchTestScheduledJob do
 
   @impl Monarch
   def scheduled_at, do: Timex.end_of_day(DateTime.utc_now())
+
+  @impl Monarch
+  def query do
+    from(job in "monarch_jobs",
+      where: job.name == "Elixir.AFakeJob",
+      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+    )
+    |> Repo.all()
+  end
+
+  @impl Monarch
+  def update(_) do
+    from(job in "monarch_jobs",
+      where: job.name == "Elixir.AFakeJob",
+      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+    )
+    |> Repo.delete_all()
+  end
+end
+
+
+defmodule MonarchTestScheduledPastJob do
+  @moduledoc """
+  A module that implements a monarch job that should be scheduled at the beginning of the day.
+  """
+
+  import Ecto.Query
+
+  alias Monarch.Repo
+
+  @behaviour Monarch
+
+  @impl Monarch
+  def skip, do: false
+
+  @impl Monarch
+  def scheduled_at, do: Timex.beginning_of_day(DateTime.utc_now())
 
   @impl Monarch
   def query do

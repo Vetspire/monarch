@@ -8,7 +8,7 @@ defmodule Monarch do
   alias Monarch.Worker
 
   @doc """
-  The time the job should be scheduled to run at.
+  The time the job should be scheduled to run at in the future in UTC.
 
   If `scheduled_at` is in the past, the job will be scheduled as soon as possible the next time Monarch is run.
   If `scheduled_at` is nil, Monarch won't automatically enqueue jobs, and they will need to be manually enqueued.

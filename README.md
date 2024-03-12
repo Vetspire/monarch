@@ -40,10 +40,12 @@ You can use this mix task inside of Monarch to spin up a module for you or write
 
 This should create the directory from the `monarch-path` if it doesn't already exist and create the `my_monarch_module` file inside the direcotry with a template of the Monarch behaviour implemented for you.
 
-Then, there are 2 functions you need for our Monarch behaviour to work: a `query/0` function and an `update/1` function.
+Then, there are 4 functions that should be generated that you need for our Monarch behaviour to work: a `scheduled_at/0`, a `skip/0` a `query/0` function and an `update/1` function.
 
-* `query/0` - Should return a list of records that need to be updated.
-* `update/1` - Takes the list of records from `query/0` and performs the given update
+- `scheduled_at/0` - The date and time the job should be run in UTC. This should work the same way as the implementation of a normal Oban job. If the `scheduled_at` time is in the past, the job will automatically be queued and executed when Monarch is next ran. If `scheduled_at` is nil, the job will not be automatically enqueued and should be manually run. If the `scheduled_at` is in the future, the job will be executed at the time specified.
+- `skip/0` - Specifies whether to skip executing the job. Skipping will mark the Monarch job as complete but will not actually run what is specified in the module. This is useful for example if you want to run a particular job only on certain environments. You could specify: `Application.get_env(:monarch, Monarch)[:deploy_environment] != :production` in a Monarch behaviour module and it would skip executing Monarch jobs that are not production but still mark them as complete in the current environment so they are not attempted to run again.
+- `query/0` - Should return the list of records that need to be updated.
+- `update/1` - Takes the list of records from `query/0` and performs the given update.
 
 Monarch will keep running until `query/0` returns no remaining records to be updated, after which it will record a completed job in the `monarch_jobs` table.
 
@@ -83,7 +85,7 @@ Finally, if there are still more users that need to be updated Monarch will reru
 
 ### Running Monarch
 
-You can run Monarch manually via the command line or include it in your project's application module so it is automatically run *after* your application has been started and Oban is up and running.
+You can run Monarch manually via the command line or include it in your project's application module so it is automatically run _after_ your application has been started and Oban is up and running.
 
 All you need to run is `Monarch.run(Oban, #{queue_name})`.
 

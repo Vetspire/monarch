@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Monarch do
     def skip, do: false
 
     @impl Monarch
-    def schedule_at, do: DateTime.utc_now()
+    def scheduled_at, do: DateTime.utc_now()
 
     @impl Monarch
     def query do
