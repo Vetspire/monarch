@@ -7,7 +7,7 @@ defmodule MonarchTest do
   alias Monarch.Repo
 
   describe "Monarch.run/1" do
-    test "detects and queues job" do
+    test "detects and queues jobs" do
       Monarch.run(Monarch.Oban, "test")
 
       queued_jobs = all_enqueued(worker: Monarch.Worker)
@@ -46,7 +46,35 @@ defmodule MonarchTest do
                  oban_job.args["job"] == "Elixir.MonarchTestAlreadyCompletedJob"
                end)
 
-      assert 3 = length(queued_jobs)
+      scheduled_at_future_time = Timex.end_of_day(DateTime.utc_now())
+      scheduled_at_past_time = Timex.beginning_of_day(DateTime.utc_now())
+
+      # A scheduled job will still be enqueued
+      assert %Oban.Job{
+               args: %{
+                 "job" => "Elixir.MonarchTestScheduledFutureJob",
+                 "repo" => "Elixir.Monarch.Repo"
+               },
+               worker: "Monarch.Worker",
+               scheduled_at: ^scheduled_at_future_time
+             } =
+               Enum.find(queued_jobs, fn oban_job ->
+                 oban_job.args["job"] == "Elixir.MonarchTestScheduledFutureJob"
+               end)
+
+      assert %Oban.Job{
+               args: %{
+                 "job" => "Elixir.MonarchTestScheduledPastJob",
+                 "repo" => "Elixir.Monarch.Repo"
+               },
+               worker: "Monarch.Worker",
+               scheduled_at: ^scheduled_at_past_time
+             } =
+               Enum.find(queued_jobs, fn oban_job ->
+                 oban_job.args["job"] == "Elixir.MonarchTestScheduledPastJob"
+               end)
+
+      assert 5 = length(queued_jobs)
     end
 
     test "will not queue a job that has already been completed" do
@@ -59,16 +87,23 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 2 = length(all_enqueued(worker: Monarch.Worker))
+      assert 4 = length(all_enqueued(worker: Monarch.Worker))
+      refute_enqueued worker: MonarchTestAlreadyCompletedJob
+    end
 
-      # Verify the update function of the completed job did not run which would have deleted the record
-      assert 1 =
-               from(job in "monarch_jobs",
-                 where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
-                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-               )
-               |> Repo.all()
-               |> length()
+    test "will not queue a job that has scheduled_at nil" do
+      # Insert a record that would be caught by the job's query
+      Repo.insert_all("monarch_jobs", [
+        %{
+          inserted_at: NaiveDateTime.truncate(DateTime.utc_now(), :second),
+          name: "Elixir.AFakeJob"
+        }
+      ])
+
+      Monarch.run(Monarch.Oban, "test")
+
+      assert 5 = length(all_enqueued(worker: Monarch.Worker))
+      refute_enqueued worker: MonarchTestManualJob
     end
   end
 

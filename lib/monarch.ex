@@ -8,12 +8,12 @@ defmodule Monarch do
   alias Monarch.Worker
 
   @doc """
-  The time the job should be scheduled to run at.
+  The time the job should be scheduled to run at in the future in UTC.
 
   If `scheduled_at` is in the past, the job will be scheduled as soon as possible the next time Monarch is run.
   If `scheduled_at` is nil, Monarch won't automatically enqueue jobs, and they will need to be manually enqueued.
   """
-  @callback schedule_at :: DateTime.t() | nil
+  @callback scheduled_at :: DateTime.t() | nil
 
   @doc """
   A function which returns whether or not the worker should skip the operation.
@@ -65,13 +65,13 @@ defmodule Monarch do
         repo.exists?(
           from(job in "monarch_jobs", where: job.name == ^to_string(module), select: 1)
         ) or
-          is_nil(module.schedule_at)
+          is_nil(module.scheduled_at)
       end)
 
     for job <- jobs do
       Oban.insert(
         oban,
-        Worker.new(%{job: job, repo: repo, schedule_at: job.schedule_at}, queue: queue)
+        Worker.new(%{job: job, repo: repo}, queue: queue, scheduled_at: job.scheduled_at)
       )
     end
 
