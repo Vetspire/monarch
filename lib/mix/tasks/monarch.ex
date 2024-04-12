@@ -16,23 +16,23 @@ defmodule Mix.Tasks.Monarch do
   def run(args) do
     case OptionParser.parse!(args, switches: @switches) do
       {opts, [base_name]} ->
-        path = opts[:monarch_path] || :code.priv_dir(:my_app)
-
-        app_dir = File.cwd!()
-        file_name = "#{base_name}.ex"
-        file = Path.join([app_dir, path, file_name])
-        unless File.dir?(path), do: create_directory(path)
+        path = opts[:monarch_path]
 
         module_path =
-          if opts[:monarch_path] do
-            split_string_list = String.split(opts[:monarch_path], "lib/")
+          if path do
+            split_string_list = String.split(path, "lib/")
 
             split_string_list
             |> List.last()
             |> camelize()
           else
-            camelize("monarch")
+            Mix.raise("expected to receive a monarch_path argument")
           end
+
+        app_dir = File.cwd!() |> IO.inspect
+        file_name = "#{base_name}.ex"
+        file = Path.join([app_dir, path, file_name])
+        unless File.dir?(path), do: create_directory(path)
 
         assigns = [mod: Module.concat([module_path, camelize(base_name)])]
         create_file(file, monarch_template(assigns))
