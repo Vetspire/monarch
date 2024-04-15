@@ -88,7 +88,7 @@ defmodule MonarchTest do
       Monarch.run(Monarch.Oban, "test")
 
       assert 4 = length(all_enqueued(worker: Monarch.Worker))
-      refute_enqueued worker: MonarchTestAlreadyCompletedJob
+      refute_enqueued(worker: MonarchTestAlreadyCompletedJob)
     end
 
     test "will not queue a job that has scheduled_at nil" do
@@ -103,7 +103,7 @@ defmodule MonarchTest do
       Monarch.run(Monarch.Oban, "test")
 
       assert 5 = length(all_enqueued(worker: Monarch.Worker))
-      refute_enqueued worker: MonarchTestManualJob
+      refute_enqueued(worker: MonarchTestManualJob)
     end
   end
 

@@ -166,7 +166,6 @@ defmodule MonarchTestScheduledFutureJob do
   end
 end
 
-
 defmodule MonarchTestScheduledPastJob do
   @moduledoc """
   A module that implements a monarch job that should be scheduled at the beginning of the day.
