@@ -5,7 +5,7 @@ defmodule Monarch.MixProject do
     [
       app: :monarch,
       version: "0.1.2",
-      elixir: "~> 1.15.7",
+      elixir: "~> 1.17.2",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       elixirc_paths: ["lib/", "test/"],
