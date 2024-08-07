@@ -65,13 +65,13 @@ defmodule Monarch do
         repo.exists?(
           from(job in "monarch_jobs", where: job.name == ^to_string(module), select: 1)
         ) or
-          is_nil(module.scheduled_at)
+          is_nil(module.scheduled_at())
       end)
 
     for job <- jobs do
       Oban.insert(
         oban,
-        Worker.new(%{job: job, repo: repo}, queue: queue, scheduled_at: job.scheduled_at)
+        Worker.new(%{job: job, repo: repo}, queue: queue, scheduled_at: job.scheduled_at())
       )
     end
 
