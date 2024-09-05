@@ -58,23 +58,38 @@ defmodule Monarch do
       |> :application.get_key(:modules)
       |> elem(1)
 
-    jobs =
-      modules
-      |> Enum.filter(fn module -> is_implemented.(module) end)
-      |> Enum.reject(fn module ->
-        repo.exists?(
-          from(job in "monarch_jobs", where: job.name == ^to_string(module), select: 1)
-        ) or
-          is_nil(module.scheduled_at())
-      end)
+    jobs = Enum.filter(modules, fn module -> is_implemented.(module) end)
 
-    for job <- jobs do
-      Oban.insert(
-        oban,
-        Worker.new(%{job: job, repo: repo}, queue: queue, scheduled_at: job.scheduled_at())
-      )
-    end
+    repo.transaction(fn ->
+      for job <- jobs,
+          not is_nil(job.scheduled_at()),
+          not completed?(repo, job),
+          not running?(repo, job) do
+        Oban.insert(
+          oban,
+          Worker.new(%{job: job, repo: repo}, queue: queue, scheduled_at: job.scheduled_at())
+        )
+      end
+    end)
 
     :ok
+  end
+
+  @doc "Returns `true` if the given worker has completed, `false` otherwise"
+  @spec completed?(repo :: module(), worker :: module()) :: boolean()
+  def completed?(repo, worker) do
+    repo.exists?(from(job in "monarch_jobs", where: job.name == ^to_string(worker), select: 1))
+  end
+
+  @doc "Returns `true` if the given worker is currently running, `false` otherwise"
+  @spec running?(repo :: module(), worker :: module()) :: boolean()
+  def running?(repo, worker) do
+    repo.exists?(
+      from(job in Oban.Job,
+        where: job.args["job"] == ^to_string(worker),
+        where: job.state not in ["completed", "discarded", "cancelled"],
+        select: 1
+      )
+    )
   end
 end
