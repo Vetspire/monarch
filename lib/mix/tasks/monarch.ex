@@ -29,7 +29,7 @@ defmodule Mix.Tasks.Monarch do
             Mix.raise("expected to receive a monarch_path argument")
           end
 
-        app_dir = File.cwd!() |> IO.inspect
+        app_dir = File.cwd!() |> IO.inspect()
         file_name = "#{base_name}.ex"
         file = Path.join([app_dir, path, file_name])
         unless File.dir?(path), do: create_directory(path)
