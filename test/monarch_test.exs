@@ -105,6 +105,78 @@ defmodule MonarchTest do
       assert 5 = length(all_enqueued(worker: Monarch.Worker))
       refute_enqueued(worker: MonarchTestManualJob)
     end
+
+    for state <- ["available", "scheduled", "executing", "retryable"] do
+      test "will not re-enqueue jobs that are currently in state #{state}" do
+        # Insert a record that would be caught by the check in monarch
+        Repo.insert_all("oban_jobs", [
+          %{
+            inserted_at: NaiveDateTime.truncate(DateTime.utc_now(), :second),
+            worker: "Elixir.Monarch.Worker",
+            state: unquote(state),
+            args: %{
+              "job" => "Elixir.MonarchTestEmptyJob",
+              "repo" => "Elixir.Monarch.Repo"
+            }
+          }
+        ])
+
+        Monarch.run(Monarch.Oban, "test")
+
+        # Instead of 5, there should only be 4 jobs enqueued, because the `MonarchTestEmptyJob` job is already running
+        assert 4 = length(all_enqueued(worker: Monarch.Worker))
+      end
+    end
+
+    for state <- ["completed", "discarded", "cancelled"] do
+      test "will re-enqueue jobs that are currently in state #{state}" do
+        # Insert a record that would be caught by the check in monarch
+        Repo.insert_all("oban_jobs", [
+          %{
+            inserted_at: NaiveDateTime.truncate(DateTime.utc_now(), :second),
+            worker: "Elixir.Monarch.Worker",
+            state: unquote(state),
+            args: %{
+              "job" => "Elixir.MonarchTestEmptyJob",
+              "repo" => "Elixir.Monarch.Repo"
+            }
+          }
+        ])
+
+        Monarch.run(Monarch.Oban, "test")
+
+        # All jobs are re-enqueued
+        assert 5 = length(all_enqueued(worker: Monarch.Worker))
+      end
+    end
+  end
+
+  describe "Monarch.Worker.new/1" do
+    test "allows jobs to be enqueued" do
+        %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
+        |> Monarch.Worker.new()
+        |> then(&Oban.insert(Monarch.Oban, &1))
+
+        assert 1 = length(all_enqueued(worker: Monarch.Worker))
+    end
+
+    test "jobs are unique by their args" do
+      %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
+      |> Monarch.Worker.new()
+      |> then(&Oban.insert(Monarch.Oban, &1))
+
+      %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
+      |> Monarch.Worker.new()
+      |> then(&Oban.insert(Monarch.Oban, &1))
+
+      assert 1 = length(all_enqueued(worker: Monarch.Worker))
+
+      %{ "job" => "Elixir.MonarchTestEmptyJob2", "repo" => "Elixir.Monarch.Repo" }
+      |> Monarch.Worker.new()
+      |> then(&Oban.insert(Monarch.Oban, &1))
+
+      assert 2 = length(all_enqueued(worker: Monarch.Worker))
+    end
   end
 
   describe "Monarch.Worker.perform/1" do
