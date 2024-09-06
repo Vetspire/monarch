@@ -1,246 +1,258 @@
-defmodule MonarchTestEmptyJob do
-  @moduledoc """
-  A module that implements a monarch job that returns no records to update.
-  """
+if Mix.env() == :test do
+  defmodule MonarchTestEmptyJob do
+    @moduledoc """
+    A module that implements a monarch job that returns no records to update.
+    """
 
-  @behaviour Monarch
+    @behaviour Monarch
 
-  @impl Monarch
-  def skip, do: false
+    @impl Monarch
+    def skip, do: false
 
-  @impl Monarch
-  def scheduled_at, do: DateTime.utc_now()
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
 
-  @impl Monarch
-  def query, do: []
+    @impl Monarch
+    def query, do: []
 
-  @impl Monarch
-  def update(_), do: :ok
-end
-
-defmodule MonarchTestSnoozeJob do
-  @moduledoc """
-  A module that always snoozes
-  """
-
-  @behaviour Monarch
-
-  @impl Monarch
-  def skip, do: false
-
-  @impl Monarch
-  def scheduled_at, do: DateTime.utc_now()
-
-  @impl Monarch
-  def query, do: [1, 2, 3]
-
-  @impl Monarch
-  def update(_), do: :ok
-
-  @impl Monarch
-  def snooze?, do: 3600
-end
-
-defmodule MonarchTestCycleJob do
-  @moduledoc """
-  A module that will never finish
-  """
-
-  @behaviour Monarch
-
-  @impl Monarch
-  def skip, do: false
-
-  @impl Monarch
-  def scheduled_at, do: DateTime.utc_now()
-
-  @impl Monarch
-  def query, do: [1, 2, 3]
-
-  @impl Monarch
-  def update(_), do: :ok
-end
-
-defmodule MonarchTestDeleteFakeJob do
-  @moduledoc """
-  A module that implements a monarch job that will delete a record for
-  `Elixir.AFakeJob` if one exists.
-  """
-
-  import Ecto.Query
-
-  alias Monarch.Repo
-
-  @behaviour Monarch
-
-  @impl Monarch
-  def skip, do: false
-
-  @impl Monarch
-  def scheduled_at, do: DateTime.utc_now()
-
-  @impl Monarch
-  def query do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.all()
+    @impl Monarch
+    def update(_), do: :ok
   end
 
-  @impl Monarch
-  def update(_) do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.delete_all()
-  end
-end
+  defmodule MonarchTestSnoozeJob do
+    @moduledoc """
+    A module that always snoozes
+    """
 
-defmodule MonarchTestAlreadyCompletedJob do
-  @moduledoc """
-  A module that implements a monarch job that should already be
-  completed. This job will delete a record for
-  `Elixir.MonarchTestAlreadyCompletedJob` if one exists.
-  """
+    @behaviour Monarch
 
-  import Ecto.Query
+    @impl Monarch
+    def skip, do: false
 
-  alias Monarch.Repo
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
 
-  @behaviour Monarch
+    @impl Monarch
+    def query, do: [1, 2, 3]
 
-  @impl Monarch
-  def skip, do: false
+    @impl Monarch
+    def update(_), do: :ok
 
-  @impl Monarch
-  def scheduled_at, do: DateTime.utc_now()
-
-  @impl Monarch
-  def query do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.all()
+    @impl Monarch
+    def snooze?, do: 3600
   end
 
-  @impl Monarch
-  def update(_) do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.delete_all()
-  end
-end
+  defmodule MonarchTestCycleJob do
+    @moduledoc """
+    A module that will never finish
+    """
 
-defmodule MonarchTestManualJob do
-  @moduledoc """
-  A module that implements a monarch job that should be manually run and should
-  not automatically enqueue an Oban job.
-  """
+    @behaviour Monarch
 
-  import Ecto.Query
+    @impl Monarch
+    def skip, do: false
 
-  alias Monarch.Repo
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
 
-  @behaviour Monarch
+    @impl Monarch
+    def query, do: [1, 2, 3]
 
-  @impl Monarch
-  def skip, do: false
-
-  @impl Monarch
-  def scheduled_at, do: nil
-
-  @impl Monarch
-  def query do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.all()
+    @impl Monarch
+    def update(_), do: :ok
   end
 
-  @impl Monarch
-  def update(_) do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.delete_all()
-  end
-end
+  defmodule MonarchTestDeleteFakeJob do
+    @moduledoc """
+    A module that implements a monarch job that will delete a record for
+    `Elixir.AFakeJob` if one exists.
+    """
 
-defmodule MonarchTestScheduledFutureJob do
-  @moduledoc """
-  A module that implements a monarch job that should be scheduled at the end of the day.
-  """
+    @behaviour Monarch
 
-  import Ecto.Query
+    import Ecto.Query
 
-  alias Monarch.Repo
+    alias Monarch.Repo
 
-  @behaviour Monarch
+    @impl Monarch
+    def skip, do: false
 
-  @impl Monarch
-  def skip, do: false
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
 
-  @impl Monarch
-  def scheduled_at, do: Timex.end_of_day(DateTime.utc_now())
+    @impl Monarch
+    def query do
+      Repo.all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
 
-  @impl Monarch
-  def query do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.all()
-  end
-
-  @impl Monarch
-  def update(_) do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.delete_all()
-  end
-end
-
-defmodule MonarchTestScheduledPastJob do
-  @moduledoc """
-  A module that implements a monarch job that should be scheduled at the beginning of the day.
-  """
-
-  import Ecto.Query
-
-  alias Monarch.Repo
-
-  @behaviour Monarch
-
-  @impl Monarch
-  def skip, do: false
-
-  @impl Monarch
-  def scheduled_at, do: Timex.beginning_of_day(DateTime.utc_now())
-
-  @impl Monarch
-  def query do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.all()
+    @impl Monarch
+    def update(_) do
+      Repo.delete_all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
   end
 
-  @impl Monarch
-  def update(_) do
-    from(job in "monarch_jobs",
-      where: job.name == "Elixir.AFakeJob",
-      select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
-    )
-    |> Repo.delete_all()
+  defmodule MonarchTestAlreadyCompletedJob do
+    @moduledoc """
+    A module that implements a monarch job that should already be
+    completed. This job will delete a record for
+    `Elixir.MonarchTestAlreadyCompletedJob` if one exists.
+    """
+
+    @behaviour Monarch
+
+    import Ecto.Query
+
+    alias Monarch.Repo
+
+    @impl Monarch
+    def skip, do: false
+
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
+
+    @impl Monarch
+    def query do
+      Repo.all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+
+    @impl Monarch
+    def update(_) do
+      Repo.delete_all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.MonarchTestAlreadyCompletedJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+  end
+
+  defmodule MonarchTestManualJob do
+    @moduledoc """
+    A module that implements a monarch job that should be manually run and should
+    not automatically enqueue an Oban job.
+    """
+
+    @behaviour Monarch
+
+    import Ecto.Query
+
+    alias Monarch.Repo
+
+    @impl Monarch
+    def skip, do: false
+
+    @impl Monarch
+    def scheduled_at, do: nil
+
+    @impl Monarch
+    def query do
+      Repo.all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+
+    @impl Monarch
+    def update(_) do
+      Repo.delete_all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+  end
+
+  defmodule MonarchTestScheduledFutureJob do
+    @moduledoc """
+    A module that implements a monarch job that should be scheduled at the end of the day.
+    """
+
+    @behaviour Monarch
+
+    import Ecto.Query
+
+    alias Monarch.Repo
+
+    @impl Monarch
+    def skip, do: false
+
+    @impl Monarch
+    def scheduled_at, do: Timex.end_of_day(DateTime.utc_now())
+
+    @impl Monarch
+    def query do
+      Repo.all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+
+    @impl Monarch
+    def update(_) do
+      Repo.delete_all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+  end
+
+  defmodule MonarchTestScheduledPastJob do
+    @moduledoc """
+    A module that implements a monarch job that should be scheduled at the beginning of the day.
+    """
+
+    @behaviour Monarch
+
+    import Ecto.Query
+
+    alias Monarch.Repo
+
+    @impl Monarch
+    def skip, do: false
+
+    @impl Monarch
+    def scheduled_at, do: Timex.beginning_of_day(DateTime.utc_now())
+
+    @impl Monarch
+    def query do
+      Repo.all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
+
+    @impl Monarch
+    def update(_) do
+      Repo.delete_all(
+        from(job in "monarch_jobs",
+          where: job.name == "Elixir.AFakeJob",
+          select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+        )
+      )
+    end
   end
 end

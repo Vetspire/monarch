@@ -5,6 +5,7 @@ defmodule Monarch.Migrations do
 
   use Ecto.Migration
 
+  @spec up(Keyword.t()) :: :ok
   def up(version: 1) do
     create table(:monarch_jobs) do
       add(:name, :string, null: false)
@@ -13,9 +14,14 @@ defmodule Monarch.Migrations do
 
     create(unique_index(:monarch_jobs, [:name]))
     create(index(:monarch_jobs, [:inserted_at]))
+
+    :ok
   end
 
+  @spec down(Keyword.t()) :: :ok
   def down(version: 1) do
     drop(table(:monarch_jobs))
+
+    :ok
   end
 end
