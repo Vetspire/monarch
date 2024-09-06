@@ -16,18 +16,18 @@ defmodule Monarch.Worker do
 
     {:ok, {action, resp}} =
       cond do
-        apply(worker, :skip, []) ->
+        worker.skip() ->
           {:ok, {:halt, []}}
 
-        function_exported?(worker, :snooze?, 0) && apply(worker, :snooze?, []) ->
-          {:ok, {:snooze, apply(worker, :snooze?, [])}}
+        function_exported?(worker, :snooze?, 0) && worker.snooze?() ->
+          {:ok, {:snooze, worker.snooze?()}}
 
         Monarch.completed?(repo, worker) ->
           {:ok, {:halt, []}}
 
         true ->
           maybe_transaction(worker, repo, fn ->
-            case apply(worker, :query, []) do
+            case worker.query() do
               [] ->
                 :ok = log_completed!(repo, worker)
                 {:halt, []}
@@ -36,7 +36,7 @@ defmodule Monarch.Worker do
                 if is_list(job.args["chunk"]) && job.args["chunk"] == chunk do
                   {:discard, chunk}
                 else
-                  apply(worker, :update, [chunk])
+                  worker.update(chunk)
                   {:cont, chunk}
                 end
             end
@@ -79,7 +79,7 @@ defmodule Monarch.Worker do
   end
 
   defp maybe_transaction(worker, repo, lambda) do
-    if function_exported?(worker, :transaction?, 0) && apply(worker, :transaction?, []) do
+    if function_exported?(worker, :transaction?, 0) && worker.transaction?() do
       repo.transaction(lambda)
     else
       {:ok, lambda.()}

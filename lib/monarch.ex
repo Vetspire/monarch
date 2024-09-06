@@ -30,7 +30,7 @@ defmodule Monarch do
 
   Monarch jobs are deemed successful and complete once `query/0` returns an empty list.
   """
-  @callback query :: [struct()]
+  @callback query :: [term()]
 
   @doc """
   A function which takes the output of successive `query/1` calls and performs the given function
@@ -39,7 +39,7 @@ defmodule Monarch do
   When used in tandem with `query/0`, allows stepping through large datasets (i.e. given an `Ecto.Queryable.t()` which
   invalidates predicates defined in `query/0`)
   """
-  @callback update([struct()]) :: any()
+  @callback update([term()]) :: term()
 
   @doc """
   Controls whether or not the job will run in a transaction
@@ -75,16 +75,16 @@ defmodule Monarch do
   @doc """
   Queues up all pending jobs waiting to be run that have the Monarch behaviour implemented.
   """
+  @spec run(oban :: module(), String.t()) :: :ok
   def run(oban, queue) do
     is_implemented = fn module ->
       __MODULE__ in List.wrap(module.module_info(:attributes)[:behaviour])
     end
 
-    repo = Map.get(Oban.config(oban), :repo)
+    repo = oban |> Oban.config() |> Map.get(:repo)
 
     modules =
-      repo
-      |> apply(:config, [])
+      repo.config()
       |> Keyword.get(:otp_app)
       |> :application.get_key(:modules)
       |> elem(1)
@@ -109,18 +109,20 @@ defmodule Monarch do
   @doc "Returns `true` if the given worker has completed, `false` otherwise"
   @spec completed?(repo :: module(), worker :: module()) :: boolean()
   def completed?(repo, worker) do
-    repo.exists?(from(job in "monarch_jobs", where: job.name == ^to_string(worker), select: 1))
+    query = from(job in "monarch_jobs", where: job.name == ^to_string(worker), select: 1)
+    repo.exists?(query)
   end
 
   @doc "Returns `true` if the given worker is currently running, `false` otherwise"
   @spec running?(repo :: module(), worker :: module()) :: boolean()
   def running?(repo, worker) do
-    repo.exists?(
+    query =
       from(job in Oban.Job,
         where: job.args["job"] == ^to_string(worker),
         where: job.state not in ["completed", "discarded", "cancelled"],
         select: 1
       )
-    )
+
+    repo.exists?(query)
   end
 end

@@ -32,7 +32,7 @@ def down, do: Monarch.Migrations.down(version: 1)
 
 ### Implementing the Monarch behaviour
 
-In order to write an Oban job that will get detected by Monarch you just need to implement the Monarch behaviour in any module inside your application.
+In order to write a Monarch job, you need to implement the Monarch behaviour in a module inside your application. Monarch will automatically detect this at runtime.
 
 You can use this mix task inside of Monarch to spin up a module for you or write one manually.
 
@@ -46,6 +46,11 @@ Then, there are 4 functions that should be generated that you need for our Monar
 - `skip/0` - Specifies whether to skip executing the job. Skipping will mark the Monarch job as complete but will not actually run what is specified in the module. This is useful for example if you want to run a particular job only on certain environments. You could specify: `Application.get_env(:monarch, Monarch)[:deploy_environment] != :production` in a Monarch behaviour module and it would skip executing Monarch jobs that are not production but still mark them as complete in the current environment so they are not attempted to run again.
 - `query/0` - Should return the list of records that need to be updated.
 - `update/1` - Takes the list of records from `query/0` and performs the given update.
+
+There are currently two optional callbacks:
+
+- `snooze?/0` - If this function is implemented, and returns an integer, the job will be rescheduled to run again in that many seconds. This is useful if you want to run a job again after a certain amount of time has passed. Does nothing if falsey or unimplemented.
+- `transaction?/0` - Controls whether or not the job should be run in a transaction. If this function is implemented and returns true, the job will be run in a transaction. If falsey or unimplemented, the job will not be run in a transaction.
 
 Monarch will keep running until `query/0` returns no remaining records to be updated, after which it will record a completed job in the `monarch_jobs` table.
 
@@ -92,9 +97,3 @@ All you need to run is `Monarch.run(Oban, #{queue_name})`.
 `Oban` should be your own instance of Oban inside your application you pass into Monarch and `#{queue_name}` is any queue you have defined that you want jobs to be run against. Your queue can be an existing queue your application is using or you can create a queue specifically for Monarch.
 
 Please see [Oban's documentation](https://hexdocs.pm/oban/Oban.html) on how to install Oban and define queues.
-
-### TODO for when Monarch abstracted out into library
-
-- Implement Credo
-- Implement Dialyzer
-- Implement Github CI

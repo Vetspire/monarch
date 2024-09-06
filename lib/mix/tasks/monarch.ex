@@ -1,4 +1,6 @@
 defmodule Mix.Tasks.Monarch do
+  @shortdoc "Creates a skeleton file that implements the monarch behaviour."
+
   @moduledoc "The monarch mix task: `mix help monarch`"
 
   use Mix.Task
@@ -6,13 +8,11 @@ defmodule Mix.Tasks.Monarch do
   import Macro, only: [camelize: 1]
   import Mix.Generator
 
-  @shortdoc "Creates a skeleton file that implements the monarch behaviour."
-
   @switches [
     monarch_path: :string
   ]
 
-  @impl true
+  @impl Mix.Task
   def run(args) do
     case OptionParser.parse!(args, switches: @switches) do
       {opts, [base_name]} ->
@@ -29,11 +29,12 @@ defmodule Mix.Tasks.Monarch do
             Mix.raise("expected to receive a monarch_path argument")
           end
 
-        app_dir = File.cwd!() |> IO.inspect()
+        app_dir = File.cwd!()
         file_name = "#{base_name}.ex"
         file = Path.join([app_dir, path, file_name])
         unless File.dir?(path), do: create_directory(path)
 
+        # credo:disable-for-lines:1
         assigns = [mod: Module.concat([module_path, camelize(base_name)])]
         create_file(file, monarch_template(assigns))
 
