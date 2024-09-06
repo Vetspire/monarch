@@ -18,6 +18,49 @@ defmodule MonarchTestEmptyJob do
   def update(_), do: :ok
 end
 
+defmodule MonarchTestSnoozeJob do
+  @moduledoc """
+  A module that always snoozes
+  """
+
+  @behaviour Monarch
+
+  @impl Monarch
+  def skip, do: false
+
+  @impl Monarch
+  def scheduled_at, do: DateTime.utc_now()
+
+  @impl Monarch
+  def query, do: [1, 2, 3]
+
+  @impl Monarch
+  def update(_), do: :ok
+
+  @impl Monarch
+  def snooze?, do: 3600
+end
+
+defmodule MonarchTestCycleJob do
+  @moduledoc """
+  A module that will never finish
+  """
+
+  @behaviour Monarch
+
+  @impl Monarch
+  def skip, do: false
+
+  @impl Monarch
+  def scheduled_at, do: DateTime.utc_now()
+
+  @impl Monarch
+  def query, do: [1, 2, 3]
+
+  @impl Monarch
+  def update(_), do: :ok
+end
+
 defmodule MonarchTestDeleteFakeJob do
   @moduledoc """
   A module that implements a monarch job that will delete a record for

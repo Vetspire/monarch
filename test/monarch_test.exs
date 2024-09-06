@@ -74,7 +74,7 @@ defmodule MonarchTest do
                  oban_job.args["job"] == "Elixir.MonarchTestScheduledPastJob"
                end)
 
-      assert 5 = length(queued_jobs)
+      assert 7 = length(queued_jobs)
     end
 
     test "will not queue a job that has already been completed" do
@@ -87,7 +87,7 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 4 = length(all_enqueued(worker: Monarch.Worker))
+      assert 6 = length(all_enqueued(worker: Monarch.Worker))
       refute_enqueued(worker: MonarchTestAlreadyCompletedJob)
     end
 
@@ -102,7 +102,7 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 5 = length(all_enqueued(worker: Monarch.Worker))
+      assert 7 = length(all_enqueued(worker: Monarch.Worker))
       refute_enqueued(worker: MonarchTestManualJob)
     end
 
@@ -123,8 +123,8 @@ defmodule MonarchTest do
 
         Monarch.run(Monarch.Oban, "test")
 
-        # Instead of 5, there should only be 4 jobs enqueued, because the `MonarchTestEmptyJob` job is already running
-        assert 4 = length(all_enqueued(worker: Monarch.Worker))
+        # Instead of 7, there should only be 4 jobs enqueued, because the `MonarchTestEmptyJob` job is already running
+        assert 6 = length(all_enqueued(worker: Monarch.Worker))
       end
     end
 
@@ -146,7 +146,7 @@ defmodule MonarchTest do
         Monarch.run(Monarch.Oban, "test")
 
         # All jobs are re-enqueued
-        assert 5 = length(all_enqueued(worker: Monarch.Worker))
+        assert 7 = length(all_enqueued(worker: Monarch.Worker))
       end
     end
   end
@@ -197,6 +197,32 @@ defmodule MonarchTest do
                )
                |> Repo.all()
                |> length()
+    end
+
+    test "detects cycles and discards job" do
+      assert {:discard, reason} =
+               Monarch.Worker.perform(%Oban.Job{
+                 args: %{
+                   "job" => "Elixir.MonarchTestCycleJob",
+                   "repo" => "Elixir.Monarch.Repo"
+                 },
+                 worker: "Monarch.Worker"
+               })
+
+      assert reason =~ "Cycle detected"
+    end
+
+    test "snoozes a job if the worker implements the `snooze?` callback" do
+      assert {:snooze, snooze_time} =
+               Monarch.Worker.perform(%Oban.Job{
+                 args: %{
+                   "job" => "Elixir.MonarchTestSnoozeJob",
+                   "repo" => "Elixir.Monarch.Repo"
+                 },
+                 worker: "Monarch.Worker"
+               })
+
+      assert snooze_time == 3600
     end
 
     test "recurisvely performs jobs if there are still records to be updated" do
