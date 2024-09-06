@@ -42,6 +42,13 @@ defmodule Monarch do
   @callback update([struct()]) :: any()
 
   @doc """
+  Controls whether or not the job will run in a transaction
+  """
+  @callback transaction? :: boolean()
+
+  @optional_callbacks transaction?: 0
+
+  @doc """
   Queues up all pending jobs waiting to be run that have the Monarch behaviour implemented.
   """
   def run(oban, queue) do
