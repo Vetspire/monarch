@@ -153,25 +153,25 @@ defmodule MonarchTest do
 
   describe "Monarch.Worker.new/1" do
     test "allows jobs to be enqueued" do
-        %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
-        |> Monarch.Worker.new()
-        |> then(&Oban.insert(Monarch.Oban, &1))
-
-        assert 1 = length(all_enqueued(worker: Monarch.Worker))
-    end
-
-    test "jobs are unique by their args" do
-      %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
+      %{"job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo"}
       |> Monarch.Worker.new()
       |> then(&Oban.insert(Monarch.Oban, &1))
 
-      %{ "job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo" }
+      assert 1 = length(all_enqueued(worker: Monarch.Worker))
+    end
+
+    test "jobs are unique by their args" do
+      %{"job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo"}
+      |> Monarch.Worker.new()
+      |> then(&Oban.insert(Monarch.Oban, &1))
+
+      %{"job" => "Elixir.MonarchTestEmptyJob", "repo" => "Elixir.Monarch.Repo"}
       |> Monarch.Worker.new()
       |> then(&Oban.insert(Monarch.Oban, &1))
 
       assert 1 = length(all_enqueued(worker: Monarch.Worker))
 
-      %{ "job" => "Elixir.MonarchTestEmptyJob2", "repo" => "Elixir.Monarch.Repo" }
+      %{"job" => "Elixir.MonarchTestEmptyJob2", "repo" => "Elixir.Monarch.Repo"}
       |> Monarch.Worker.new()
       |> then(&Oban.insert(Monarch.Oban, &1))
 
