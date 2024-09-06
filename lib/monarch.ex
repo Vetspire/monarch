@@ -46,7 +46,31 @@ defmodule Monarch do
   """
   @callback transaction? :: boolean()
 
-  @optional_callbacks transaction?: 0
+  @doc """
+  Controls whether or not the job will snooze for a given number of seconds before running again.
+
+  This is useful for jobs that should only run within a core set of business hours, or while external services
+  are reachable.
+
+  If `snooze?` is a falsey value, the job will not snooze.
+
+  Example:
+
+  ```elixir
+  @impl Monarch
+  def snooze? do
+    if DateTime.utc_now().hour in 9..5 do
+      3600 # snooze till the next hour
+    end
+  end
+  ```
+
+  Note that this callback is checked on every iteration of a backfill, so the runtime of your snooze function
+  will impact the performance of your backfill.
+  """
+  @callback snooze? :: nil | false | integer()
+
+  @optional_callbacks transaction?: 0, snooze?: 0
 
   @doc """
   Queues up all pending jobs waiting to be run that have the Monarch behaviour implemented.
