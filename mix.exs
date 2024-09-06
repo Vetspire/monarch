@@ -30,10 +30,14 @@ defmodule Monarch.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto_sql, "~> 3.11"},
-      {:postgrex, ">= 0.0.0"},
+      {:ecto, "~> 3.6"},
       {:oban, "~> 2.14"},
-      {:timex, "~> 3.7.6"},
+      {:ecto_sql, "~> 3.6"},
+
+      # Dev/Test deps. These libraries are assumed to be provided by apps which
+      # rely on Monarch.
+      {:timex, "~> 3.7.6", only: [:test]},
+      {:postgrex, ">= 0.0.0", only: [:test]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:styler, "~> 0.11", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
