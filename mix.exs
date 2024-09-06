@@ -9,7 +9,12 @@ defmodule Monarch.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       elixirc_paths: ["lib/", "test/"],
-      deps: deps()
+      deps: deps(),
+      docs: [main: "Monarch"],
+      source_url: "https://github.com/vetspire/monarch",
+      homepage_url: "https://github.com/vetspire/monarch",
+      package: [licenses: ["MIT"], links: %{"GitHub" => "https://github.com/vetspire/monarch"}],
+      description: "Simple framework for defining and running data migrations and backfills."
     ]
   end
 
@@ -27,7 +32,8 @@ defmodule Monarch.MixProject do
       {:ecto_sql, "~> 3.11"},
       {:postgrex, ">= 0.0.0"},
       {:oban, "~> 2.14"},
-      {:timex, "~> 3.7.6"}
+      {:timex, "~> 3.7.6"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
