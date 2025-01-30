@@ -11,8 +11,8 @@ defmodule Monarch.Worker do
 
   @impl Oban.Worker
   def perform(job) do
-    worker = String.to_existing_atom(job.args["job"])
-    repo = String.to_existing_atom(job.args["repo"])
+    worker = String.to_atom(job.args["job"])
+    repo = String.to_atom(job.args["repo"])
 
     {:ok, {action, resp}} =
       cond do
