@@ -17,6 +17,7 @@ defmodule Monarch.Worker do
     {:ok, {action, resp}} =
       cond do
         worker.skip() ->
+          :ok = log_completed!(repo, worker)
           {:ok, {:halt, []}}
 
         function_exported?(worker, :snooze?, 0) && worker.snooze?() ->
@@ -49,8 +50,6 @@ defmodule Monarch.Worker do
         :ok
 
       # Recursively perform the Oban job if there are still records to be updated.
-      # TODO: should we re-enqueue this working so it runs in a different pod?
-      #       if so we'll have to do this differently.
       :cont ->
         perform(%{job | args: Map.put(job.args, "chunk", resp)})
 

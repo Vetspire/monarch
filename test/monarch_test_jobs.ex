@@ -19,6 +19,26 @@ if Mix.env() == :test do
     def update(_), do: :ok
   end
 
+  defmodule MonarchTestSkipJob do
+    @moduledoc """
+    A module that always skips
+    """
+
+    @behaviour Monarch
+
+    @impl Monarch
+    def skip, do: true
+
+    @impl Monarch
+    def scheduled_at, do: DateTime.utc_now()
+
+    @impl Monarch
+    def query, do: [1, 2, 3]
+
+    @impl Monarch
+    def update(_), do: :ok
+  end
+
   defmodule MonarchTestSnoozeJob do
     @moduledoc """
     A module that always snoozes

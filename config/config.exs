@@ -17,3 +17,12 @@ config :monarch, Oban,
   name: Monarch.Oban,
   repo: Monarch.Repo,
   testing: :manual
+
+case Mix.env() do
+  :test ->
+    import_config "test.exs"
+
+  _ ->
+    # No action for other environments
+    nil
+end
