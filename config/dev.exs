@@ -14,6 +14,3 @@ config :monarch, Oban,
   name: Monarch.Oban,
   repo: Monarch.Repo,
   testing: :manual
-
-config :logger,
-  level: :info
