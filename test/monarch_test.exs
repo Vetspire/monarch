@@ -74,7 +74,29 @@ defmodule MonarchTest do
                  oban_job.args["job"] == "Elixir.MonarchTestScheduledPastJob"
                end)
 
-      assert 7 = length(queued_jobs)
+      assert %Oban.Job{
+               args: %{
+                 "job" => "Elixir.MonarchTestSkipJob",
+                 "repo" => "Elixir.Monarch.Repo"
+               },
+               worker: "Monarch.Worker"
+             } =
+               Enum.find(queued_jobs, fn oban_job ->
+                 oban_job.args["job"] == "Elixir.MonarchTestSkipJob"
+               end)
+
+      assert %Oban.Job{
+               args: %{
+                 "job" => "Elixir.MonarchTestSnoozeJob",
+                 "repo" => "Elixir.Monarch.Repo"
+               },
+               worker: "Monarch.Worker"
+             } =
+               Enum.find(queued_jobs, fn oban_job ->
+                 oban_job.args["job"] == "Elixir.MonarchTestSnoozeJob"
+               end)
+
+      assert 8 = length(queued_jobs)
     end
 
     test "will not queue a job that has already been completed" do
@@ -87,7 +109,7 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 6 = length(all_enqueued(worker: Monarch.Worker))
+      assert 7 = length(all_enqueued(worker: Monarch.Worker))
       refute_enqueued(worker: MonarchTestAlreadyCompletedJob)
     end
 
@@ -102,7 +124,7 @@ defmodule MonarchTest do
 
       Monarch.run(Monarch.Oban, "test")
 
-      assert 7 = length(all_enqueued(worker: Monarch.Worker))
+      assert 8 = length(all_enqueued(worker: Monarch.Worker))
       refute_enqueued(worker: MonarchTestManualJob)
     end
 
@@ -123,8 +145,8 @@ defmodule MonarchTest do
 
         Monarch.run(Monarch.Oban, "test")
 
-        # Instead of 7, there should only be 4 jobs enqueued, because the `MonarchTestEmptyJob` job is already running
-        assert 6 = length(all_enqueued(worker: Monarch.Worker))
+        # Instead of 8, there should only be 7 jobs enqueued, because the `MonarchTestEmptyJob` job is already running
+        assert 7 = length(all_enqueued(worker: Monarch.Worker))
       end
     end
 
@@ -146,7 +168,7 @@ defmodule MonarchTest do
         Monarch.run(Monarch.Oban, "test")
 
         # All jobs are re-enqueued
-        assert 7 = length(all_enqueued(worker: Monarch.Worker))
+        assert 8 = length(all_enqueued(worker: Monarch.Worker))
       end
     end
   end
@@ -223,6 +245,25 @@ defmodule MonarchTest do
                })
 
       assert snooze_time == 3600
+    end
+
+    test "skips a job if the worker implements the `skip?` callback" do
+      assert :ok =
+               Monarch.Worker.perform(%Oban.Job{
+                 args: %{
+                   "job" => "Elixir.MonarchTestSkipJob",
+                   "repo" => "Elixir.Monarch.Repo"
+                 },
+                 worker: "Monarch.Worker"
+               })
+
+      assert 1 =
+               from(job in "monarch_jobs",
+                 where: job.name == "Elixir.MonarchTestSkipJob",
+                 select: %{id: job.id, name: job.name, inserted_at: job.inserted_at}
+               )
+               |> Repo.all()
+               |> length()
     end
 
     test "recurisvely performs jobs if there are still records to be updated" do

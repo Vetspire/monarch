@@ -1,7 +1,9 @@
 defmodule Mix.Tasks.Monarch do
   @shortdoc "Creates a skeleton file that implements the monarch behaviour."
 
-  @moduledoc "The monarch mix task: `mix help monarch`"
+  @moduledoc """
+  The monarch mix task: `mix help monarch`
+  """
 
   use Mix.Task
 
